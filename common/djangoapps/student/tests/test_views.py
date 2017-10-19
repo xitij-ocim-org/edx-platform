@@ -335,3 +335,17 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin):
         remove_prerequisite_course(self.course.id, get_course_milestones(self.course.id)[0])
         response = self.client.get(reverse('dashboard'))
         self.assertNotIn('<div class="prerequisites">', response.content)
+
+
+@unittest.skipUnless(settings.ROOT_URLCONF == 'lms.urls', 'Test only valid in lms')
+class TextMeTheAppViewTests(TestCase):
+    """ Tests for the TextMeTheAppView. """
+
+    def setUp(self):
+        super(TextMeTheAppViewTests, self).setUp()
+        self.text_me_url = reverse('text_me')
+
+    def test_text_me_the_app(self):
+        response = self.client.get(self.text_me_url)
+
+        self.assertContains(response, 'Send me a text with the link')

@@ -8,7 +8,7 @@ from django.conf.urls import include, patterns, url
 from django.conf.urls.static import static
 from django.contrib.admin import autodiscover as django_autodiscover
 from django.utils.translation import ugettext_lazy as _
-from django.views.generic.base import RedirectView
+from django.views.generic.base import RedirectView, TemplateView
 from ratelimitbackend import admin
 
 from courseware.views.index import CoursewareIndex
@@ -37,6 +37,7 @@ urlpatterns = (
     url(r'', include('student.urls')),
     # TODO: Move lms specific student views out of common code
     url(r'^dashboard$', 'student.views.dashboard', name="dashboard"),
+    url(r'^text-me', 'student.views.text_me', name='text_me'),
     url(r'^change_enrollment$', 'student.views.change_enrollment', name='change_enrollment'),
 
     # Event tracking endpoints

@@ -1,0 +1,13 @@
+## mako
+
+<%page expression_filter="h"/>
+<%inherit file="main.html" />
+<%namespace name='static' file='static_content.html'/>
+
+<% from openedx.core.djangolib.markup import HTML %>
+
+<div class="text-me-content">
+    <div class="container text-me-container">
+        ${HTML(fragment.body_html())}
+    </div>
+</div>
