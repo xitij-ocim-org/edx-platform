@@ -174,6 +174,10 @@
                   .fa-close {
                     color: theme-color("error");
                   }
+
+                  .fa-check {
+                    color: theme-color("success");
+                  }
                 }
 
                 .change-session {
@@ -649,18 +653,20 @@
     .message-copy .copy {
       @extend %t-copy-sub1;
 
-      margin: 2px 0 0 0;
+      margin: 2px 0 0;
     }
 
     // CASE: expandable
     &.is-expandable {
       .wrapper-tip {
-        .message-title, .message-copy {
+        .message-title,
+        .message-copy {
           margin-bottom: 0;
           display: inline-block;
         }
 
-        .message-title .value, .message-copy {
+        .message-title .value,
+        .message-copy {
           @include transition(color $tmg-f2 ease-in-out 0s);
         }
 
@@ -668,7 +674,9 @@
         &:hover {
           cursor: pointer;
 
-          .message-title .value, .message-copy, .ui-toggle-expansion {
+          .message-title .value,
+          .message-copy,
+          .ui-toggle-expansion {
             color: $link-color;
           }
         }
@@ -805,7 +813,7 @@
       .action-view-consent {
         @extend %btn-pl-white-base;
         @include float(right);
-              
+
         &.archived {
           @extend %btn-pl-default-base;
         }
@@ -1135,12 +1143,16 @@
         flex-direction: column;
 
         .enroll-btn-initial {
-          margin: $baseline/2 0 $baseline/4;
+          margin: $baseline/4 0 $baseline/4;
         }
       }
     }
 
     .popover {
+      .popover-title {
+        margin-bottom: $baseline/2;
+      }
+
       .action-items {
         display: flex;
         justify-content: space-between;
@@ -1160,7 +1172,6 @@
 
           &:hover {
             background: theme-color("primary");
-            border: theme-color("primary");
             color: theme-color("inverse");
           }
         }
@@ -1419,11 +1430,11 @@ p.course-block {
   padding: 6px 32px 7px;
   text-align: center;
   margin-top: 16px;
-  opacity:0.5;
-  background:#808080;
-  border:0;
+  opacity: 0.5;
+  background: #808080;
+  border: 0;
   color: theme-color("inverse");
-  box-shadow:none;
+  box-shadow: none;
 
   &.archived {
     @include button(simple, $button-archive-color);
@@ -1653,5 +1664,4 @@ a.fade-cover {
     color: theme-color("inverse");
     text-decoration: none;
   }
-
 }

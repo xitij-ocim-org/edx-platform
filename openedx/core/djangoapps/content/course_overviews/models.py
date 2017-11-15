@@ -394,13 +394,6 @@ class CourseOverview(TimeStampedModel):
         """
         return self.advertised_start or self.start
 
-    @property
-    def dashboard_end_display(self):
-        """
-         Return end date to diplay on learner's dashboard.
-        """
-        return self.end
-
     def has_started(self):
         """
         Returns whether the the course has started.
