@@ -801,7 +801,6 @@ STATICFILES_IGNORE_PATTERNS = (
 
     # Symlinks used by js-test-tool
     "xmodule_js",
-    "common_static",
 )
 
 PIPELINE_YUI_BINARY = 'yui-compressor'
