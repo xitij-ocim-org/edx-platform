@@ -3,16 +3,15 @@ import logging
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from edx_rest_framework_extensions.authentication import JwtAuthentication
-from rest_framework import permissions, viewsets, status
-from rest_framework.response import Response
-from rest_framework.authentication import SessionAuthentication
-
-from openedx.core.djangoapps.catalog.utils import get_course_runs_for_course
-from entitlements.api.v1.filters import CourseEntitlementFilter
-from entitlements.models import CourseEntitlement
-from entitlements.api.v1.serializers import CourseEntitlementSerializer
 from opaque_keys.edx.keys import CourseKey
+from rest_framework import permissions, viewsets, status
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.response import Response
 
+from entitlements.api.v1.filters import CourseEntitlementFilter
+from entitlements.api.v1.serializers import CourseEntitlementSerializer
+from entitlements.models import CourseEntitlement
+from openedx.core.djangoapps.catalog.utils import get_course_runs_for_course
 from student.models import CourseEnrollment
 
 log = logging.getLogger(__name__)
@@ -77,7 +76,7 @@ class EntitlementEnrollmentViewSet(viewsets.GenericViewSet):
         CourseEntitlement.set_enrollment(entitlement, None)
 
     def create(self, request, uuid):
-        course_session_id = request.data.get('course_session_id', None)
+        course_session_id = request.data.get('course_run_id', None)
 
         if not course_session_id:
             return Response(
