@@ -332,12 +332,12 @@ endorser_org = endorser_position.get('organization_name') or corporate_endorseme
           % endif
           % if instructor.get('bio'):
           <div>
-            <button class="btn btn-primary" onclick="showBio(this, '${instructor_hash}')">
-              View Bio
-            </button>
-            <div id='instructor-bio-${instructor_hash}' class="instructor-bio">
+            <div id='instructor-bio-${instructor_hash}' class="instructor-bio hidden">
               ${HTML(instructor.get('bio'))}
             </div>
+            <button class="instructor-bio-toggle btn btn-primary" onclick="toggleBio(this, '${instructor_hash}')">
+              View Bio
+            </button>
           </div>
           % endif
         </div>
