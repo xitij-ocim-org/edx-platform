@@ -4,15 +4,17 @@ function playVideo(src) {
     document.querySelector('#program_video iframe').style = 'display:block;';
     document.querySelector('#program_video iframe').src = src;
 }
-function toggleBio(button, bio_hash){
-    var bio_id = 'instructor-bio-' + bio_hash;
-    bio = document.getElementById(bio_id)
-    hidden = bio.classList.contains("hidden");
-    if(hidden){
-        bio.classList.remove("hidden")
-        button.innerHTML = 'Hide Bio'
-    }else{
-        bio.classList.add("hidden")
-        button.innerHTML = 'View Bio'
+function toggleBio(currentEl, bioHash) {
+    'use strict';
+    var button = currentEl;
+    var bioId = 'instructor-bio-' + bioHash;
+    var bio = document.getElementById(bioId);
+    var hidden = bio.classList.contains('hidden');
+    if (hidden) {
+        bio.classList.remove('hidden');
+        button.innerHTML = 'Hide Bio';
+    } else {
+        bio.classList.add('hidden');
+        button.innerHTML = 'View Bio';
     }
 }
