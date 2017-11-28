@@ -155,6 +155,7 @@ def _assets_json(request, course_key):
         'totalCount': total_count,
         'assets': assets_in_json_format,
         'sort': request_options['requested_sort'],
+        'direction': request_options['requested_sort_direction'],
     }
 
     return JsonResponse(response_payload)
