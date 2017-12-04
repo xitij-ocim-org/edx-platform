@@ -220,6 +220,7 @@ def get_course_runs_for_course(course_uuid):
                 'Catalog service user with username [%s] does not exist. Course runs will not be retrieved.',
                 catalog_integration.service_username,
             )
+            logger.info('*** COURSE get_runs *** 1')
             return []
 
         api = create_catalog_api_client(user)
@@ -235,9 +236,12 @@ def get_course_runs_for_course(course_uuid):
             cache_key=cache_key if catalog_integration.is_cache_enabled else None,
             long_term_cache=True
         )
+        logger.info('*** COURSE get_runs *** 2')
 
         return data.get('course_runs', [])
     else:
+        logger.info('*** COURSE get_runs *** 3')
+
         return []
 
 

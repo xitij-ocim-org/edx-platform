@@ -4,6 +4,7 @@ from django.db import transaction
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from edx_rest_framework_extensions.authentication import JwtAuthentication
+from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import permissions, viewsets, status
 from rest_framework.authentication import SessionAuthentication
@@ -22,9 +23,11 @@ log = logging.getLogger(__name__)
 
 
 class EntitlementViewSet(viewsets.ModelViewSet):
+    ENTITLEMENT_UUID4_REGEX = '[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
+
     authentication_classes = (JwtAuthentication, SessionAuthenticationCrossDomainCsrf,)
     permission_classes = (permissions.IsAuthenticated, IsAdminOrAuthenticatedReadOnly,)
-    lookup_value_regex = '[0-9a-f-]+'
+    lookup_value_regex = ENTITLEMENT_UUID4_REGEX
     lookup_field = 'uuid'
     serializer_class = CourseEntitlementSerializer
     filter_backends = (DjangoFilterBackend,)
@@ -125,17 +128,19 @@ class EntitlementEnrollmentViewSet(viewsets.GenericViewSet):
         """
         Verifies that a Course run is a child of the Course assigned to the entitlement.
         """
-        course_run_valid = False
         course_runs = get_course_runs_for_course(entitlement.course_uuid)
+        log.info('*** COURSE RUNS *** {runs}'.format(runs=str(course_runs)))
+        log.info('*** COURSE ID *** {run_id}'.format(run_id=course_run_id))
         for run in course_runs:
             if course_run_id == run.get('key', ''):
-                course_run_valid = True
-                break
-        return course_run_valid
+                return True
+        return False
 
     def _enroll_entitlement(self, entitlement, course_run_key, user):
         """
         Internal method to handle the details of enrolling a User in a Course Run.
+
+        Returns a response object is there is an error or exception, None otherwise
         """
         try:
             enrollment = CourseEnrollment.enroll(
@@ -166,6 +171,7 @@ class EntitlementEnrollmentViewSet(viewsets.GenericViewSet):
             )
 
         CourseEntitlement.set_enrollment(entitlement, enrollment)
+        return None
 
     def _unenroll_entitlement(self, entitlement, course_run_key, user):
         """
@@ -215,7 +221,7 @@ class EntitlementEnrollmentViewSet(viewsets.GenericViewSet):
         # Determine if this is a Switch session or a simple enroll and handle both.
         try:
             course_run_string = CourseKey.from_string(course_run_id)
-        except CourseKey.InvalidKeyError:
+        except InvalidKeyError:
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
                 data={
@@ -223,30 +229,33 @@ class EntitlementEnrollmentViewSet(viewsets.GenericViewSet):
                 }
             )
         if entitlement.enrollment_course_run is None:
-            self._enroll_entitlement(
+            response = self._enroll_entitlement(
                 entitlement=entitlement,
                 course_run_key=course_run_string,
                 user=request.user
             )
+            if response:
+                return response
         elif entitlement.enrollment_course_run.course_id != course_run_id:
             self._unenroll_entitlement(
                 entitlement=entitlement,
                 course_run_key=entitlement.enrollment_course_run.course_id,
                 user=request.user
             )
-            self._enroll_entitlement(
+            response = self._enroll_entitlement(
                 entitlement=entitlement,
                 course_run_key=course_run_string,
                 user=request.user
             )
+            if response:
+                return response
+
+        data = self.get_serializer(entitlement).data
+        data['course_run_id'] = course_run_id
 
         return Response(
             status=status.HTTP_201_CREATED,
-            data={
-                'uuid': entitlement.uuid,
-                'course_run_id': course_run_id,
-                'is_active': True
-            }
+            data=data
         )
 
     def destroy(self, request, uuid):
