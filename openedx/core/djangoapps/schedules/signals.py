@@ -28,58 +28,49 @@ log = logging.getLogger(__name__)
 
 @receiver(post_save, sender=CourseEnrollment, dispatch_uid='create_schedule_for_enrollment')
 def create_schedule(sender, **kwargs):
-    if not kwargs['created']:
-        # only create schedules when enrollment records are created
-        return
+    try:
+        enrollment = kwargs['instance']
+        current_site = get_current_site()
+        if not _should_create_schedule(kwargs['created'], current_site, enrollment):
+            return
 
-    current_site = get_current_site()
-    if current_site is None:
-        log.debug('Schedules: No current site')
-        return
+        schedule_config = ScheduleConfig.current(current_site)
 
-    enrollment = kwargs['instance']
-    schedule_config = ScheduleConfig.current(current_site)
-    if (
-        not schedule_config.create_schedules
-        and not CREATE_SCHEDULE_WAFFLE_FLAG.is_enabled(enrollment.course_id)
-    ):
-        log.debug('Schedules: Creation not enabled for this course or for this site')
-        return
+        # This represents the first date at which the learner can access the content. This will be the latter of
+        # either the enrollment date or the course's start date.
+        content_availability_date = max(enrollment.created, enrollment.course_overview.start)
+        upgrade_deadline = _calculate_upgrade_deadline(enrollment.course_id, content_availability_date)
+        experience_type = _get_experience_type(enrollment)
 
-    if not enrollment.course_overview.self_paced:
-        log.debug('Schedules: Creation only enabled for self-paced courses')
-        return
+        if _should_randomly_suppress_schedule_creation(
+                schedule_config,
+                enrollment,
+                upgrade_deadline,
+                experience_type,
+                content_availability_date,
+        ):
+            return
 
-    # This represents the first date at which the learner can access the content. This will be the latter of
-    # either the enrollment date or the course's start date.
-    content_availability_date = max(enrollment.created, enrollment.course_overview.start)
+        schedule = Schedule.objects.create(
+            enrollment=enrollment,
+            start=content_availability_date,
+            upgrade_deadline=upgrade_deadline
+        )
 
-    upgrade_deadline = _calculate_upgrade_deadline(enrollment.course_id, content_availability_date)
+        ScheduleExperience(schedule=schedule, experience_type=experience_type).save()
 
-    if course_has_highlights(enrollment.course_id):
-        experience_type = ScheduleExperience.EXPERIENCES.course_updates
-    else:
-        experience_type = ScheduleExperience.EXPERIENCES.default
-
-    if _should_randomly_suppress_schedule_creation(
-        schedule_config,
-        enrollment,
-        upgrade_deadline,
-        experience_type,
-        content_availability_date,
-    ):
-        return
-
-    schedule = Schedule.objects.create(
-        enrollment=enrollment,
-        start=content_availability_date,
-        upgrade_deadline=upgrade_deadline
-    )
-
-    ScheduleExperience(schedule=schedule, experience_type=experience_type).save()
-
-    log.debug('Schedules: created a new schedule starting at %s with an upgrade deadline of %s and experience type: %s',
-              content_availability_date, upgrade_deadline, ScheduleExperience.EXPERIENCES[experience_type])
+        log.debug(
+            'Schedules: created a new schedule starting at %s with an upgrade deadline of %s and experience type: %s',
+            content_availability_date, upgrade_deadline, ScheduleExperience.EXPERIENCES[experience_type]
+        )
+    except Exception:  # pylint: disable=broad-except
+        # We do not want to block the creation of a CourseEnrollment because of an error in creating a Schedule.
+        # No Schedule is acceptable, but no CourseEnrollment is not.
+        enrollment = kwargs.get('instance')
+        log.exception('Encountered error in creating a Schedule for CourseEnrollment for user {} in course {}'.format(
+            enrollment.user.id if (enrollment and enrollment.user) else None,
+            enrollment.course_id if enrollment else None
+        ))
 
 
 @receiver(COURSE_START_DATE_CHANGED, dispatch_uid="update_schedules_on_course_start_changed")
@@ -167,9 +158,9 @@ def _should_randomly_suppress_schedule_creation(
         if upgrade_deadline:
             upgrade_deadline_str = upgrade_deadline.isoformat()
         analytics.track(
-            'edx.bi.schedule.suppressed',
-            {
-                'user_id': enrollment.user.id,
+            user_id=enrollment.user.id,
+            event='edx.bi.schedule.suppressed',
+            properties={
                 'course_id': unicode(enrollment.course_id),
                 'experience_type': experience_type,
                 'upgrade_deadline': upgrade_deadline_str,
@@ -179,3 +170,39 @@ def _should_randomly_suppress_schedule_creation(
         return True
 
     return False
+
+
+def _should_create_schedule(enrollment_created, current_site, enrollment):
+    """Checks configuration and returns whether a Schedule should be created for this enrollment"""
+    if not enrollment_created:
+        # only create schedules when enrollment records are created
+        return False
+
+    if current_site is None:
+        log.debug('Schedules: No current site')
+        return False
+
+    schedule_config = ScheduleConfig.current(current_site)
+    if (
+        not schedule_config.create_schedules and
+        not CREATE_SCHEDULE_WAFFLE_FLAG.is_enabled(enrollment.course_id)
+    ):
+        log.debug('Schedules: Creation not enabled for this course or for this site')
+        return False
+
+    if not enrollment.course_overview.self_paced:
+        log.debug('Schedules: Creation only enabled for self-paced courses')
+        return False
+
+    return True
+
+
+def _get_experience_type(enrollment):
+    """Returns the ScheduleExperience type for the given enrollment
+
+    Schedules will receive the Course Updates experience if the course has any section highlights defined.
+    """
+    if course_has_highlights(enrollment.course_id):
+        return ScheduleExperience.EXPERIENCES.course_updates
+    else:
+        return ScheduleExperience.EXPERIENCES.default
