@@ -7,8 +7,8 @@
 
         DiscussionUtil.wmdEditors = {};
 
-        DiscussionUtil.LEFT_KEYCODE = 37;
-        DiscussionUtil.RIGHT_KEYCODE = 39;
+        DiscussionUtil.leftKey = 37;
+        DiscussionUtil.rightKey = 39;
 
         DiscussionUtil.getTemplate = function(id) {
             return $('script#' + id).html();
@@ -543,26 +543,27 @@
         };
 
         DiscussionUtil.handleKeypressInToolbar = function(event) {
-                var $currentButton, $nextButton, $toolbar, $allButtons,
-                    keyPressed, nextIndex, currentButtonIndex;
+            var $currentButton, $nextButton, $toolbar, $allButtons,
+                keyPressed, nextIndex, currentButtonIndex,
+                validKeyPress, toolbarHasButtons;
 
-                var leftKey = this.LEFT_KEYCODE;
-                var rightKey = this.RIGHT_KEYCODE;
+            $currentButton = $(event.target);
+            keyPressed = event.which || event.keyCode;
+            $toolbar = $currentButton.parent();
+            $allButtons = $toolbar.children('.wmd-button');
 
-                $currentButton = $(event.target);
-                keyPressed = event.which || event.keyCode;
-                $toolbar = $(event.target).parent();
-                $allButtons = $toolbar.children('.wmd-button');
+            validKeyPress = keyPressed === this.leftKey || keyPressed === this.rightKey;
+            toolbarHasButtons = $allButtons.length() > 0;
 
-                if (keyPressed === leftKey || keyPressed === rightKey) {
-                        currentButtonIndex = $allButtons.index($currentButton);
-                        nextIndex = keyPressed === leftKey ? currentButtonIndex - 1 : currentButtonIndex + 1;
-                        nextIndex = Math.max(Math.min(nextIndex, $allButtons.length - 1), 0);
+            if (validKeyPress && toolbarHasButtons) {
+                currentButtonIndex = $allButtons.index($currentButton);
+                nextIndex = keyPressed === this.leftKey ? currentButtonIndex - 1 : currentButtonIndex + 1;
+                nextIndex = Math.max(Math.min(nextIndex, $allButtons.length - 1), 0);
 
-                        $nextButton = $($allButtons[nextIndex]);
-                        this.moveSelectionToNextItem($currentButton, $nextButton);
-                }
-            };
+                $nextButton = $($allButtons[nextIndex]);
+                this.moveSelectionToNextItem($currentButton, $nextButton);
+            }
+        };
 
         DiscussionUtil.moveSelectionToNextItem = function(prevItem, nextItem) {
             prevItem.attr('aria-selected', 'false');
