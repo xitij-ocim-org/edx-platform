@@ -443,6 +443,14 @@
         }
       }
 
+      .u-field {
+        &.u-field-dropdown, &.editable-never &.mode-display {
+          .u-field-value {
+            margin-bottom: ($baseline);
+          }
+        }
+      }
+
       .u-field-readonly .u-field-title {
         font-size: 16px;
         color: #636c72;

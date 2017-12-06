@@ -179,10 +179,11 @@ define(['backbone',
             });
 
             it('shows loading error when UserAccountModel fails to load for enterprise learners', function() {
-                var request;
-                var accountSettingsView = createEnterpriseLearnerAccountSettingsPage();
-
+                var accountSettingsView, request;
                 requests = AjaxHelpers.requests(this);
+
+                accountSettingsView = createEnterpriseLearnerAccountSettingsPage();
+
                 Helpers.expectLoadingErrorIsVisible(accountSettingsView, false);
 
                 request = requests[0];
@@ -195,10 +196,11 @@ define(['backbone',
 
 
             it('shows loading error when UserPreferencesModel fails to load for enterprise learners', function() {
-                var request;
-                var accountSettingsView = createEnterpriseLearnerAccountSettingsPage();
-
+                var accountSettingsView, request;
                 requests = AjaxHelpers.requests(this);
+
+                accountSettingsView = createEnterpriseLearnerAccountSettingsPage();
+
                 Helpers.expectLoadingErrorIsVisible(accountSettingsView, false);
 
                 request = requests[0];
@@ -222,9 +224,11 @@ define(['backbone',
             });
 
             it('renders fields after the models are successfully fetched for enterprise learners', function() {
-                var accountSettingsView = createEnterpriseLearnerAccountSettingsPage();
-
+                var accountSettingsView;
                 requests = AjaxHelpers.requests(this);
+
+                accountSettingsView = createEnterpriseLearnerAccountSettingsPage();
+
                 Helpers.expectLoadingErrorIsVisible(accountSettingsView, false);
 
                 AjaxHelpers.respondWithJson(requests, Helpers.createAccountSettingsData());
@@ -238,10 +242,10 @@ define(['backbone',
             });
 
             it('expects all fields to behave correctly for enterprise learners', function() {
-                var i, view, sectionsData, textFields, dropdownFields;
-                var accountSettingsView = createEnterpriseLearnerAccountSettingsPage();
-
+                var accountSettingsView, i, view, sectionsData, textFields, dropdownFields;
                 requests = AjaxHelpers.requests(this);
+
+                accountSettingsView = createEnterpriseLearnerAccountSettingsPage();
 
                 AjaxHelpers.respondWithJson(requests, Helpers.createAccountSettingsData());
                 AjaxHelpers.respondWithJson(requests, Helpers.TIME_ZONE_RESPONSE);
