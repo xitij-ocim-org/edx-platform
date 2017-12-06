@@ -570,14 +570,14 @@ def account_settings_context(request):
     enterprise_customer_name = None
     sync_learner_profile_data = False
     enterprise_learner_data = get_enterprise_learner_data(site=request.site, user=request.user)
-    if enterprise_learner_data and 'enterprise_customer' in enterprise_learner_data[0]:
+    if enterprise_learner_data:
         enterprise_customer_name = enterprise_learner_data[0]['enterprise_customer']['name']
         enterprise_idp = enterprise_learner_data[0]['enterprise_customer']['identity_provider']
         identity_provider = third_party_auth.provider.Registry.get(provider_id=enterprise_idp)
-        sync_learner_profile_data = identity_provider.sync_learner_profile_data
+        sync_learner_profile_data = identity_provider.sync_learner_profile_data if identity_provider else False
 
     context['sync_learner_profile_data'] = sync_learner_profile_data
-    context['edx_support_url'] = settings.ENTERPRISE_SUPPORT_URL
+    context['edx_support_url'] = configuration_helpers.get_value('SUPPORT_SITE_LINK', settings.SUPPORT_SITE_LINK)
     context['enterprise_name'] = enterprise_customer_name
     context['enterprise_readonly_account_fields'] = {
         'fields': settings.ENTERPRISE_READONLY_ACCOUNT_FIELDS

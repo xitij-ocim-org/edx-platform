@@ -10,8 +10,10 @@
 
         <% if (section.message) { %>
             <div class="account-settings-section-message">
-                <span class="fa fa-info-circle message-icon <%- section.message_type %>" aria-hidden="true"></span>
-                <%= section.message %>
+                <div class="alert-message <%- section.messageType%>" aria-live="polite">
+                    <i class="fa fa-info-circle message-icon <%- section.messageType %>" aria-hidden="true"></i>
+                    <span><%= section.message %></span>
+                </div>
             </div>
         <% } %>
 

@@ -148,4 +148,154 @@ define(['backbone',
                 });
             });
         });
+
+        describe('edx.user.AccountSettingsFactory', function() {
+            var createEnterpriseLearnerAccountSettingsPage = function() {
+                var context = AccountSettingsPage(
+                    Helpers.FIELDS_DATA,
+                    [],
+                    Helpers.AUTH_DATA,
+                    Helpers.PASSWORD_RESET_SUPPORT_LINK,
+                    Helpers.USER_ACCOUNTS_API_URL,
+                    Helpers.USER_PREFERENCES_API_URL,
+                    1,
+                    Helpers.PLATFORM_NAME,
+                    Helpers.CONTACT_EMAIL,
+                    true,
+                    '',
+
+                    Helpers.SYNC_LEARNER_PROFILE_DATA,
+                    Helpers.ENTERPRISE_NAME,
+                    Helpers.ENTERPRISE_READ_ONLY_ACCOUNT_FIELDS,
+                    Helpers.EDX_SUPPORT_URL
+                );
+                return context.accountSettingsView;
+            };
+
+            var requests;
+
+            beforeEach(function() {
+                setFixtures('<div class="wrapper-account-settings"></div>');
+            });
+
+            it('shows loading error when UserAccountModel fails to load for enterprise learners', function() {
+                var request;
+                var accountSettingsView = createEnterpriseLearnerAccountSettingsPage();
+
+                requests = AjaxHelpers.requests(this);
+                Helpers.expectLoadingErrorIsVisible(accountSettingsView, false);
+
+                request = requests[0];
+                expect(request.method).toBe('GET');
+                expect(request.url).toBe(Helpers.USER_ACCOUNTS_API_URL);
+
+                AjaxHelpers.respondWithError(requests, 500);
+                Helpers.expectLoadingErrorIsVisible(accountSettingsView, true);
+            });
+
+
+            it('shows loading error when UserPreferencesModel fails to load for enterprise learners', function() {
+                var request;
+                var accountSettingsView = createEnterpriseLearnerAccountSettingsPage();
+
+                requests = AjaxHelpers.requests(this);
+                Helpers.expectLoadingErrorIsVisible(accountSettingsView, false);
+
+                request = requests[0];
+                expect(request.method).toBe('GET');
+                expect(request.url).toBe(Helpers.USER_ACCOUNTS_API_URL);
+
+                AjaxHelpers.respondWithJson(requests, Helpers.createAccountSettingsData());
+                Helpers.expectLoadingErrorIsVisible(accountSettingsView, false);
+
+                request = requests[1];
+                expect(request.method).toBe('GET');
+                expect(request.url).toBe('/user_api/v1/preferences/time_zones/?country_code=1');
+                AjaxHelpers.respondWithJson(requests, Helpers.TIME_ZONE_RESPONSE);
+
+                request = requests[2];
+                expect(request.method).toBe('GET');
+                expect(request.url).toBe(Helpers.USER_PREFERENCES_API_URL);
+
+                AjaxHelpers.respondWithError(requests, 500);
+                Helpers.expectLoadingErrorIsVisible(accountSettingsView, true);
+            });
+
+            it('renders fields after the models are successfully fetched for enterprise learners', function() {
+                var accountSettingsView = createEnterpriseLearnerAccountSettingsPage();
+
+                requests = AjaxHelpers.requests(this);
+                Helpers.expectLoadingErrorIsVisible(accountSettingsView, false);
+
+                AjaxHelpers.respondWithJson(requests, Helpers.createAccountSettingsData());
+                AjaxHelpers.respondWithJson(requests, Helpers.TIME_ZONE_RESPONSE);
+                AjaxHelpers.respondWithJson(requests, Helpers.createUserPreferencesData());
+
+                accountSettingsView.render();
+
+                Helpers.expectLoadingErrorIsVisible(accountSettingsView, false);
+                Helpers.expectSettingsSectionsAndFieldsToBeRenderedWithMessage(accountSettingsView);
+            });
+
+            it('expects all fields to behave correctly for enterprise learners', function() {
+                var i, view, sectionsData, textFields, dropdownFields;
+                var accountSettingsView = createEnterpriseLearnerAccountSettingsPage();
+
+                requests = AjaxHelpers.requests(this);
+
+                AjaxHelpers.respondWithJson(requests, Helpers.createAccountSettingsData());
+                AjaxHelpers.respondWithJson(requests, Helpers.TIME_ZONE_RESPONSE);
+                AjaxHelpers.respondWithJson(requests, Helpers.createUserPreferencesData());
+                AjaxHelpers.respondWithJson(requests, {});  // Page viewed analytics event
+
+                sectionsData = accountSettingsView.options.tabSections.aboutTabSections;
+
+                expect(sectionsData[0].fields.length).toBe(7);
+
+                // Verify that username, name and email fields are readonly
+                textFields = [sectionsData[0].fields[0], sectionsData[0].fields[1], sectionsData[0].fields[2]];
+                for (i = 0; i < textFields.length; i++) {
+                    view = textFields[i].view;
+
+                    FieldViewsSpecHelpers.verifyReadonlyTextField(view, {
+                        title: view.options.title,
+                        valueAttribute: view.options.valueAttribute,
+                        helpMessage: view.options.helpMessage,
+                        validValue: 'My Name',
+                        defaultValue: ''
+                    }, requests);
+                }
+
+                // Verify un-editable country dropdown field
+                view = sectionsData[0].fields[5].view;
+                FieldViewsSpecHelpers.verifyReadonlyDropDownField(view, {
+                    title: view.options.title,
+                    valueAttribute: view.options.valueAttribute,
+                    helpMessage: '',
+                    validValue: Helpers.FIELD_OPTIONS[1][0],
+                    editable: 'never',
+                    defaultValue: null
+                });
+
+                expect(sectionsData[1].fields.length).toBe(4);
+                dropdownFields = [
+                    sectionsData[1].fields[0],
+                    sectionsData[1].fields[1],
+                    sectionsData[1].fields[2]
+                ];
+                _.each(dropdownFields, function(field) {
+                    view = field.view;
+                    FieldViewsSpecHelpers.verifyDropDownField(view, {
+                        title: view.options.title,
+                        valueAttribute: view.options.valueAttribute,
+                        helpMessage: '',
+                        validValue: Helpers.FIELD_OPTIONS[1][0],
+                        invalidValue1: Helpers.FIELD_OPTIONS[2][0],
+                        invalidValue2: Helpers.FIELD_OPTIONS[3][0],
+                        validationError: 'Nope, this will not do!',
+                        defaultValue: null
+                    }, requests);
+                });
+            });
+        });
     });
