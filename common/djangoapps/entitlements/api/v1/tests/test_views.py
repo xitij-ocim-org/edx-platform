@@ -128,8 +128,9 @@ class EntitlementViewSetTest(ModuleStoreTestCase):
         results = response.data.get('results', [])  # pylint: disable=no-member
         assert results == CourseEntitlementSerializer([entitlement], many=True).data
 
-    def test_staff_get_all_entitlements(self):
-        entitlements = CourseEntitlementFactory.create_batch(2)
+    def test_staff_get_only_staff_entitlements(self):
+        CourseEntitlementFactory.create_batch(2)
+        entitlement = CourseEntitlementFactory.create(user=self.user)
 
         response = self.client.get(
             self.entitlements_list_url,
